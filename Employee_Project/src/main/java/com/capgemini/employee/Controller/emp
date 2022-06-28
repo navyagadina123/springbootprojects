@@ -1,1 +1,83 @@
 
+package com.capgemini.employee.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.capgemini.employee.entity.Employee;
+import com.capgemini.employee.exception.EmployeeNotFoundException;
+import com.capgemini.employee.repository.EmployeeRepository;
+
+@CrossOrigin("http://localhost:3000")
+@RestController
+@RequestMapping("api/v1")
+public class EmployeeController {
+    
+	@Autowired
+	private EmployeeRepository empRepository;
+	
+	//get employee information - id, name, location, salary, contactNo, password
+	@GetMapping("/employee")
+	public List<Employee> getEmployee(){
+		return this.empRepository.findAll();
+	}
+	
+	//Get Employee information with the help of id
+	@GetMapping("/employee/{id}")
+	public ResponseEntity<Employee> getEmployeeById(@PathVariable (value="id") Integer employeeId)
+	throws EmployeeNotFoundException{
+		Employee employee=empRepository.findById(employeeId).orElseThrow(() ->
+		new EmployeeNotFoundException("Employee not found for this id : "+employeeId));
+		return ResponseEntity.ok().body(employee);
+	}
+	
+	//Save Employee information
+	@PostMapping("employee")
+	public List<Employee> createEmployee(@RequestBody Employee employee) {
+		return (List<Employee>) empRepository.save(employee);
+	}
+	
+	//Update all employee information
+	@PutMapping("employee/{id}")
+	public ResponseEntity<Employee> updateEmployeeById(@PathVariable (value="id") Integer employeeId,
+		  @Validated @RequestBody	Employee employeeDetails)
+	throws EmployeeNotFoundException{
+		Employee employee =empRepository.findById(employeeId).orElseThrow();
+		
+		employee.setName(employeeDetails.getName());
+		employee.setLocation(employeeDetails.getLocation());
+		employee.setSalary(employeeDetails.getSalary());
+		employee.setContactNo(employeeDetails.getContactNo());
+		employee.setPassword(employeeDetails.getPassword());
+		
+		return ResponseEntity.ok(this.empRepository.save(employee));
+	}
+	
+	//Delete employee information 
+	@DeleteMapping("employee/{id}")
+	public Map<String, Boolean> deleteEmployeeById(@PathVariable (value="id") Integer employeeId)
+	throws EmployeeNotFoundException{
+		Employee employee =empRepository.findById(employeeId)
+				.orElseThrow(() -> new EmployeeNotFoundException("Employee is not found by that id :: "+employeeId));
+	this.empRepository.delete(employee);
+	
+	Map<String, Boolean> response=new HashMap<>();
+	response.put("deleted", Boolean.TRUE);
+	return response;
+	}
+	
+}
